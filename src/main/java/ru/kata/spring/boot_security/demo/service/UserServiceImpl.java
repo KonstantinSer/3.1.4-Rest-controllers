@@ -63,8 +63,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public UserDetails loadUserByUsername(String username) throws UsernameNotFoundException {
-        User user = userRepository.findByUsername(username);
+    public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+        User user = userRepository.findByEmail(email);
         if (user == null) {
             throw new UsernameNotFoundException("User not found");
         }
@@ -72,8 +72,8 @@ public class UserServiceImpl implements UserService {
     }
 
     @Override
-    public User findByUsername(String username) {
-        return userRepository.findByUsername(username);
+    public User findByUsername(String email) {
+        return userRepository.findByEmail(email);
     }
 
     @Override
@@ -81,10 +81,23 @@ public class UserServiceImpl implements UserService {
         User existingUser = userRepository.findById(user.getId())
                 .orElseThrow(() -> new RuntimeException("Пользователь не найден с id: " + user.getId()));
 
-        existingUser.setUsername(user.getUsername());
-        existingUser.setEmail(user.getEmail());
+        existingUser.setEmail(user.getUsername());
         existingUser.setAge(user.getAge());
+        existingUser.setLastName(user.getLastName());
+        existingUser.setFirstName(user.getFirstName());
+
 
         return userRepository.save(existingUser);
     }
+
+    @Override
+    public List<User> findByRole(String roleName) {
+        return  userRepository.findByRoles_Name(roleName);
+    }
+
+    @Override
+    public List<Role> getAllRoles() {
+        return roleRepository.findAll();
+    }
 }
+

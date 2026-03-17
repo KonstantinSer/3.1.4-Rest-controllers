@@ -1,59 +1,140 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org">
+<html xmlns:th="http://www.thymeleaf.org" lang="ru">
 <head>
     <meta charset="UTF-8">
-    <title>Список пользователей</title>
+    <title>Admin panel</title>
+    <link href="https://cdn.jsdelivr.net" rel="stylesheet">
     <style>
-        table { border-collapse: collapse; width: 100%; margin: 20px 0; }
-        th, td { border: 1px solid #ddd; padding: 10px; text-align: left; }
-        th { background-color: #f2f2f2; }
-        button { padding: 5px 10px; cursor: pointer; }
-        .logout-form { float: right; margin: 10px; }
+        body { background-color: #f8f9fa; }
+        .top-panel { background-color: #343a40; color: white; padding: 10px 20px; }
+        .sidebar { background-color: white; min-height: calc(100vh - 48px); padding-top: 20px; }
+        .nav-pills .nav-link.active { background-color: #007bff; border-radius: 4px; }
+        .card-header { background-color: #f7f7f7; font-weight: bold; border-bottom: 1px solid #dee2e6; }
+        .form-container { max-width: 300px; margin: 0 auto; text-align: center; }
+        label { font-weight: bold; margin-top: 10px; }
     </style>
 </head>
 <body>
-<div class="logout-form">
+
+<!-- Шапка -->
+<div class="top-panel d-flex justify-content-between align-items-center">
+    <div>
+        <strong th:text="${currentUser.email}">admin@mail.ru</strong>
+        <span> with roles: </span>
+        <span th:each="role : ${currentUser.roles}" th:text="${role.name.replace('ROLE_', '')} + ' '"></span>
+    </div>
     <form th:action="@{/logout}" method="post">
-        <button type="submit">Выйти</button>
+        <button type="submit" class="btn btn-link text-secondary text-decoration-none p-0">Logout</button>
     </form>
 </div>
 
-<h2>Пользователи</h2>
+<div class="container-fluid">
+    <div class="row">
+        <!-- Левое меню -->
+        <div class="col-md-2 px-0 sidebar shadow-sm">
+            <div class="nav flex-column nav-pills">
+                <a class="nav-link active mx-2" href="/admin">Admin</a>
+                <a class="nav-link mx-2" href="/user">User</a>
+            </div>
+        </div>
 
-<table>
-    <thead>
-    <tr>
-        <th>Имя (username)</th>
-        <th>Email</th>
-        <th>Возраст (age)</th>
-        <th>Операции</th>
-    </tr>
-    </thead>
-    <tbody>
-    <tr th:each="user : ${users}">
-        <td th:text="${user.username}">Имя</td>
-        <td th:text="${user.email}">Email</td>
-        <td th:text="${user.age}">Возраст</td>
-        <td>
-            <!-- Редактирование: GET /admin/updateInfo?id=123 -->
-            <a th:href="@{/admin/updateInfo(id=${user.id})}" style="text-decoration: none;">
-                <button type="button">✏️ Обновить</button>
-            </a>
+        <!-- Основной контент -->
+        <div class="col-md-10 p-4">
+            <h1>Admin panel</h1>
 
-            <!-- Удаление: POST через форму -->
-            <form th:action="@{/admin/deleteUser}" method="post" style="display: inline;">
-                <input type="hidden" name="id" th:value="${user.id}" />
-                <button type="submit" onclick="return confirm('Удалить?')">🗑️ Удалить</button>
-            </form>
-        </td>
-    </tr>
-    </tbody>
-</table>
+            <!-- ВКЛАДКИ -->
+            <ul class="nav nav-tabs" id="adminTab" role="tablist">
+                <li class="nav-item">
+                    <button class="nav-link active" id="table-tab" data-bs-toggle="tab" data-bs-target="#table-content" type="button" role="tab">Users table</button>
+                </li>
+                <li class="nav-item">
+                    <button class="nav-link" id="new-user-tab" data-bs-toggle="tab" data-bs-target="#form-content" type="button" role="tab">New User</button>
+                </li>
+            </ul>
 
-<br/>
+            <div class="tab-content border bg-white" id="adminTabContent">
 
-<!-- Кнопка добавления нового пользователя -->
-<input type="button" value="Добавить пользователя" onclick="window.location.href='/admin/addNewUser'"/>
+                <!-- ВКЛАДКА 1: ТАБЛИЦА -->
+                <div class="tab-pane fade show active" id="table-content" role="tabpanel">
+                    <div class="card border-0">
+                        <div class="card-header">All users</div>
+                        <div class="card-body">
+                            <table class="table table-striped align-middle">
+                                <thead>
+                                <tr>
+                                    <th>ID</th>
+                                    <th>First Name</th>
+                                    <th>Last Name</th>
+                                    <th>Age</th>
+                                    <th>Email</th>
+                                    <th>Role</th>
+                                    <th>Edit</th>
+                                    <th>Delete</th>
+                                </tr>
+                                </thead>
+                                <tbody>
+                                <tr th:each="u : ${users}">
+                                    <td th:text="${u.id}"></td>
+                                    <td th:text="${u.firstName}"></td>
+                                    <td th:text="${u.lastName}"></td>
+                                    <td th:text="${u.age}"></td>
+                                    <td th:text="${u.email}"></td>
+                                    <td><span th:each="r : ${u.roles}" th:text="${r.name.replace('ROLE_', '')} + ' '"></span></td>
+                                    <td><button class="btn btn-info btn-sm text-white">Edit</button></td>
+                                    <td>
+                                        <form th:action="@{/admin/deleteUser}" method="post">
+                                            <input type="hidden" name="id" th:value="${u.id}">
+                                            <button type="submit" class="btn btn-danger btn-sm">Delete</button>
+                                        </form>
+                                    </td>
+                                </tr>
+                                </tbody>
+                            </table>
+                        </div>
+                    </div>
+                </div>
 
+                <!-- ВКЛАДКА 2: НОВЫЙ ПОЛЬЗОВАТЕЛЬ -->
+                <div class="tab-pane fade" id="form-content" role="tabpanel">
+                    <div class="card border-0">
+                        <div class="card-header">Add new user</div>
+                        <div class="card-body">
+                            <div class="form-container">
+                                <form th:action="@{/admin/addNewUser}" th:object="${newUser}" method="post">
+                                    <label>First name</label>
+                                    <input type="text" th:field="*{firstName}" class="form-control form-control-sm" required>
+
+                                    <label>Last name</label>
+                                    <input type="text" th:field="*{lastName}" class="form-control form-control-sm" required>
+
+                                    <label>Age</label>
+                                    <input type="number" th:field="*{age}" class="form-control form-control-sm" required>
+
+                                    <label>Email</label>
+                                    <input type="email" th:field="*{email}" class="form-control form-control-sm" required>
+
+                                    <label>Password</label>
+                                    <input type="password" th:field="*{password}" class="form-control form-control-sm" required>
+
+                                    <label>Role</label>
+                                    <select class="form-select" name="roleIds" multiple required style="height: 60px;">
+                                        <option th:each="role : ${allRoles}"
+                                                th:value="${role.id}"
+                                                th:text="${role.name.replace('ROLE_', '')}"></option>
+                                    </select>
+
+                                    <button type="submit" class="btn btn-success btn-lg mt-3">Add new user</button>
+                                </form>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+            </div> <!-- Конец tab-content -->
+        </div>
+    </div>
+</div>
+
+<script src="https://cdn.jsdelivr.net"></script>
 </body>
 </html>

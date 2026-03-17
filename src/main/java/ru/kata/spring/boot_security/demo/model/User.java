@@ -31,11 +31,14 @@ public class User implements UserDetails {
     @Column(name = "password", nullable = false, length = 100)
     private String password;
 
-    @Column(name = "name", nullable = false, unique = true)
-    private String username;
+    @Column(name = "first_name", nullable = false, unique = true)
+    private String firstName;
 
     @Column(name = "age")
     private Integer age;
+
+    @Column(name = "last_name")
+    private String lastName;
 
     @Column(name = "email", nullable = false)
     private String email;
@@ -54,9 +57,10 @@ public class User implements UserDetails {
     public User() {
     }
 
-    public User(String username, String password, Integer age, String email, Set<Role> roles) {
+    public User(String firstname, String lastName, String password, Integer age, String email, Set<Role> roles) {
 
-        this.username = username;
+        this.firstName = firstname;
+        this.lastName = lastName;
         this.password = password;
         this.age = age;
         this.email = email;
@@ -82,9 +86,24 @@ public class User implements UserDetails {
         this.roles = roles;
     }
 
-    public void setUsername(String username) {
-        this.username = username;
+
+    public String getFirstName() {
+        return firstName;
     }
+
+    public void setFirstName(String firstName) {
+        this.firstName = firstName;
+    }
+
+    public String getLastName() {
+        return lastName;
+    }
+
+
+    public void setLastName(String lastName) {
+        this.lastName = lastName;
+    }
+
 
     public Integer getAge() {
         return age;
@@ -120,7 +139,7 @@ public class User implements UserDetails {
 
     @Override
     public String getUsername() {
-        return username;
+        return email;
     }
 
     @Override
@@ -142,6 +161,5 @@ public class User implements UserDetails {
     public boolean isEnabled() {
         return true;
     }
-
 
 }

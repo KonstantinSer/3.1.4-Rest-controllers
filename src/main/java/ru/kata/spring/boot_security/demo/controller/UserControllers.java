@@ -41,6 +41,7 @@ public class UserControllers {
 
     @PostMapping("/register")
     public String creatUserAccount(@RequestParam String username,
+                                   @RequestParam String lastname,
                                    @RequestParam String password,
                                    @RequestParam Integer age,
                                    @RequestParam String email) {
@@ -48,12 +49,12 @@ public class UserControllers {
         Role userRole = roleRepository.findByName("ROLE_USER")
                 .orElseThrow(() -> new RuntimeException("Role ROLE_USER not found!"));
 
-        User user = new User(username, hashedPassword, age, email, Set.of(userRole));
+        User user = new User(username, lastname, hashedPassword, age, email, Set.of(userRole));
         userService.save(user);
         return "redirect:/login";
     }
 
-    @GetMapping("/login")
+    @GetMapping()
     public String login() {
         return "login";
     }
