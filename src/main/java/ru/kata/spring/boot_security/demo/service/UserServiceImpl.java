@@ -1,82 +1,88 @@
 package ru.kata.spring.boot_security.demo.service;
 
 
+import org.hibernate.Hibernate;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.security.core.userdetails.UserDetails;
 import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import ru.kata.spring.boot_security.demo.DAO.RoleRepository;
 import ru.kata.spring.boot_security.demo.DAO.UserRepository;
-import ru.kata.spring.boot_security.demo.model.Role;
 import ru.kata.spring.boot_security.demo.model.User;
 
-import java.util.HashSet;
 import java.util.List;
 import java.util.Optional;
-import java.util.Set;
 
 @Service
-@Transactional
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
-    private final RoleRepository roleRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, RoleRepository roleRepository, BCryptPasswordEncoder bCryptPasswordEncoder) {
+    public UserServiceImpl(UserRepository userRepository, BCryptPasswordEncoder bCryptPasswordEncoder) {
         this.userRepository = userRepository;
-        this.roleRepository = roleRepository;
+
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
     }
 
     @Override
+    @Transactional(readOnly = true)
     public List<User> findAll() {
         return userRepository.findAll();
     }
 
     @Override
+    @Transactional
     public void save(User user) {
-        user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
-
-        Role userRole = roleRepository.findByName("ROLE_USER")
-                .orElseThrow(() -> new RuntimeException("Роль USER не найдена"));
-
-        Set<Role> roles = new HashSet<>();
-        roles.add(userRole);
-        user.setRoles(roles);
-
+        if (user.getId() != null) {
+            User existingUser = userRepository.findById(user.getId()).orElseThrow();
+            if (user.getPassword() == null || user.getPassword().isEmpty()) {
+                user.setPassword(existingUser.getPassword());
+            } else {
+                user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
+            }
+        } else {
+            user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
+        }
         userRepository.save(user);
     }
 
     @Override
+    @Transactional(readOnly = true)
     public User findById(Long id) {
         Optional<User> userFromDb = userRepository.findById(id);
         return userFromDb.orElse(null);
     }
 
     @Override
+    @Transactional
     public void delete(Long id) {
         userRepository.deleteById(id);
     }
 
+
     @Override
+    @Transactional(readOnly = true)
     public UserDetails loadUserByUsername(String email) throws UsernameNotFoundException {
+
         User user = userRepository.findByEmail(email);
         if (user == null) {
             throw new UsernameNotFoundException("User not found");
         }
+        Hibernate.initialize(user.getRoles());
         return user;
     }
 
     @Override
-    public User findByUsername(String email) {
+    @Transactional(readOnly = true)
+    public User findByEmail(String email) {
         return userRepository.findByEmail(email);
     }
 
     @Override
+    @Transactional
     public User updateUser(User user) {
         User existingUser = userRepository.findById(user.getId())
                 .orElseThrow(() -> new RuntimeException("Пользователь не найден с id: " + user.getId()));
@@ -85,19 +91,14 @@ public class UserServiceImpl implements UserService {
         existingUser.setAge(user.getAge());
         existingUser.setLastName(user.getLastName());
         existingUser.setFirstName(user.getFirstName());
+        existingUser.setRoles(user.getRoles());
 
-
+        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
+            if (!user.getPassword().equals(existingUser.getPassword())) {
+                existingUser.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
+            }
+        }
         return userRepository.save(existingUser);
-    }
-
-    @Override
-    public List<User> findByRole(String roleName) {
-        return  userRepository.findByRoles_Name(roleName);
-    }
-
-    @Override
-    public List<Role> getAllRoles() {
-        return roleRepository.findAll();
     }
 }
 
