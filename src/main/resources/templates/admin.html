@@ -126,7 +126,7 @@
                                                 th:data-last="${user.lastName}"
                                                 th:data-age="${user.age}"
                                                 th:data-email="${user.email}"
-                                                th:data-roles="${#strings.listJoin(user.roles.![name], ',')}">
+                                                th:data-role-ids="${#strings.listJoin(user.roles.![id], ',')}">
                                             Edit
                                         </button>
                                     </td>
@@ -139,8 +139,9 @@
                                                 th:data-last="${user.lastName}"
                                                 th:data-age="${user.age}"
                                                 th:data-email="${user.email}"
-                                                th:data-roles="${#strings.listJoin(user.roles.![name], ',')}">
+                                                th:data-roles="${user.roles != null ? #strings.listJoin(user.roles.![name], ',') : ''}">
                                             Delete
+                                        </button>
                                         </button>
                                     </td>
                                 </tr>
@@ -208,7 +209,7 @@
 <div class="modal fade" id="editModal" tabindex="-1" aria-hidden="true">
     <div class="modal-dialog">
         <div class="modal-content">
-            <form th:action="@{/admin/updateInfo}" method="POST">
+            <form th:action="@{/admin/updateUser}" method="POST">
                 <div class="modal-header">
                     <h5 class="modal-title">Edit user</h5>
                     <button type="button" class="btn-close" data-bs-dismiss="modal"></button>
@@ -303,7 +304,8 @@
 
                     <div class="mb-3">
                         <label class="form-label">Role</label>
-                        <input type="text" id="deleteRoles" class="form-control" readonly style="background-color: #e9ecef;">
+                        <textarea id="deleteRoles" class="form-control" readonly rows="2"
+                                  style="background-color: #e9ecef; resize: none;"></textarea>
                     </div>
                 </div>
                 <div class="modal-footer">
@@ -362,6 +364,7 @@
         editModal.addEventListener('show.bs.modal', function(event) {
             const button = event.relatedTarget;
 
+            // Заполнение обычных полей
             document.getElementById('editId').value = button.getAttribute('data-id');
             document.getElementById('editIdDisplay').value = button.getAttribute('data-id');
             document.getElementById('editFirst').value = button.getAttribute('data-first');
@@ -369,11 +372,14 @@
             document.getElementById('editAge').value = button.getAttribute('data-age');
             document.getElementById('editEmail').value = button.getAttribute('data-email');
 
-            // Выбор ролей
+            // ✅ Выбор ролей по ID
             const rolesSelect = document.getElementById('editRoles');
-            const userRoles = button.getAttribute('data-roles').split(',').map(r => r.trim());
+            const selectedRoleIds = button.getAttribute('data-role-ids')
+                .split(',')
+                .map(id => parseInt(id.trim()));
+
             for (let option of rolesSelect.options) {
-                option.selected = userRoles.includes(option.text);
+                option.selected = selectedRoleIds.includes(parseInt(option.value));
             }
         });
 
@@ -382,13 +388,25 @@
         deleteModal.addEventListener('show.bs.modal', function(event) {
             const button = event.relatedTarget;
 
-            document.getElementById('deleteId').value = button.getAttribute('data-id');
-            document.getElementById('deleteIdDisplay').value = button.getAttribute('data-id');
-            document.getElementById('deleteFirst').value = button.getAttribute('data-first');
-            document.getElementById('deleteLast').value = button.getAttribute('data-last');
-            document.getElementById('deleteAge').value = button.getAttribute('data-age');
-            document.getElementById('deleteEmail').value = button.getAttribute('data-email');
-            document.getElementById('deleteRoles').value = button.getAttribute('data-roles');
+            // Обычные поля
+            document.getElementById('deleteId').value = button.getAttribute('data-id') || '';
+            document.getElementById('deleteIdDisplay').value = button.getAttribute('data-id') || '';
+            document.getElementById('deleteFirst').value = button.getAttribute('data-first') || '';
+            document.getElementById('deleteLast').value = button.getAttribute('data-last') || '';
+            document.getElementById('deleteAge').value = button.getAttribute('data-age') || '';
+            document.getElementById('deleteEmail').value = button.getAttribute('data-email') || '';
+
+            // ✅ РОЛИ: каждая с новой строки
+            const rolesRaw = button.getAttribute('data-roles');
+            if (rolesRaw && rolesRaw.trim() !== '') {
+                const formatted = rolesRaw
+                    .split(',')
+                    .map(r => r.trim().replace('ROLE_', ''))
+                    .join('\n');  // ✅ Перенос строки вместо запятой
+                document.getElementById('deleteRoles').value = formatted;
+            } else {
+                document.getElementById('deleteRoles').value = 'No roles';
+            }
         });
 
     });

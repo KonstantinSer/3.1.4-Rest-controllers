@@ -35,8 +35,21 @@
     <!-- ЛЕВЫЙ САЙДБАР -->
     <nav class="col-md-2 d-none d-md-block sidebar px-0">
       <div class="nav flex-column nav-pills">
-        <!-- Если пользователь ADMIN, можно оставить ссылку на админку, если просто USER — только эту кнопку -->
-        <a class="nav-link active mx-3" href="#">User</a>
+
+
+        <a class="nav-link"
+           th:href="@{/admin}"
+           th:classappend="${#strings.contains(#httpServletRequest.requestURI, '/admin')} ? 'active'">
+          Admin
+        </a>
+
+        <!-- Ссылка на User -->
+        <a class="nav-link"
+           th:href="@{/user}"
+           th:classappend="${#strings.contains(#httpServletRequest.requestURI, '/user')} ? 'active'">
+          User
+        </a>
+
       </div>
     </nav>
 

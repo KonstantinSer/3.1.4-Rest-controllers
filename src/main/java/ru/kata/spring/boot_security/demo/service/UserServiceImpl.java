@@ -8,22 +8,26 @@ import org.springframework.security.core.userdetails.UsernameNotFoundException;
 import org.springframework.security.crypto.bcrypt.BCryptPasswordEncoder;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import ru.kata.spring.boot_security.demo.DAO.RoleRepository;
 import ru.kata.spring.boot_security.demo.DAO.UserRepository;
+import ru.kata.spring.boot_security.demo.model.Role;
 import ru.kata.spring.boot_security.demo.model.User;
 
+import java.util.HashSet;
 import java.util.List;
-import java.util.Optional;
+import java.util.Set;
 
 @Service
 public class UserServiceImpl implements UserService {
 
     private final UserRepository userRepository;
     private final BCryptPasswordEncoder bCryptPasswordEncoder;
+    private final RoleRepository roleRepository;
 
     @Autowired
-    public UserServiceImpl(UserRepository userRepository, BCryptPasswordEncoder bCryptPasswordEncoder) {
+    public UserServiceImpl(UserRepository userRepository, BCryptPasswordEncoder bCryptPasswordEncoder, RoleRepository roleRepository) {
         this.userRepository = userRepository;
-
+        this.roleRepository = roleRepository;
         this.bCryptPasswordEncoder = bCryptPasswordEncoder;
     }
 
@@ -35,25 +39,34 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void save(User user) {
-        if (user.getId() != null) {
-            User existingUser = userRepository.findById(user.getId()).orElseThrow();
-            if (user.getPassword() == null || user.getPassword().isEmpty()) {
-                user.setPassword(existingUser.getPassword());
-            } else {
-                user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
-            }
-        } else {
+    public void newUser(User user, List<Long> roleIds) {
+
+        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
             user.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
+        } else {
+            if (user.getId() == null) {
+                throw new IllegalArgumentException("Пароль обязателен для нового пользователя");
+            }
         }
+
+        Set<Role> roles;
+        if (roleIds != null && !roleIds.isEmpty()) {
+            roles = new HashSet<>(roleRepository.findAllById(roleIds));
+        } else {
+            Role defaultRole = roleRepository.findByName("ROLE_USER")
+                    .orElseThrow(() -> new RuntimeException("Default role ROLE_USER not found"));
+            roles = Set.of(defaultRole);
+        }
+
+        user.setRoles(roles);
         userRepository.save(user);
     }
 
     @Override
     @Transactional(readOnly = true)
     public User findById(Long id) {
-        Optional<User> userFromDb = userRepository.findById(id);
-        return userFromDb.orElse(null);
+        return userRepository.findById(id)
+                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
     }
 
     @Override
@@ -78,12 +91,18 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public User findByEmail(String email) {
-        return userRepository.findByEmail(email);
+        User user = userRepository.findByEmail(email);
+        if (user != null) {
+            return user;
+        } else {
+            throw new UsernameNotFoundException("User not found");
+        }
     }
+
 
     @Override
     @Transactional
-    public User updateUser(User user) {
+    public void updateUser(User user, List<Long> roleIds) {
         User existingUser = userRepository.findById(user.getId())
                 .orElseThrow(() -> new RuntimeException("Пользователь не найден с id: " + user.getId()));
 
@@ -91,14 +110,30 @@ public class UserServiceImpl implements UserService {
         existingUser.setAge(user.getAge());
         existingUser.setLastName(user.getLastName());
         existingUser.setFirstName(user.getFirstName());
-        existingUser.setRoles(user.getRoles());
+
+        Set<Role> roles;
+
+        if (roleIds != null && !roleIds.isEmpty()) {
+            roles = new HashSet<>(roleRepository.findAllById(roleIds));
+        } else {
+            Role defaultRole = roleRepository.findByName("ROLE_USER")
+                    .orElseThrow(() -> new RuntimeException("Default role ROLE_USER not found"));
+            roles = Set.of(defaultRole);
+        }
+        existingUser.setRoles(roles);
 
         if (user.getPassword() != null && !user.getPassword().isEmpty()) {
-            if (!user.getPassword().equals(existingUser.getPassword())) {
-                existingUser.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
-            }
+            existingUser.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
         }
-        return userRepository.save(existingUser);
+
+        userRepository.save(existingUser);
+
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<Role> getAllRoles() {
+        return roleRepository.findAll();
     }
 }
 
