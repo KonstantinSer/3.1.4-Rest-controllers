@@ -1,80 +1,103 @@
 package ru.kata.spring.boot_security.demo.controller;
 
 
-import org.springframework.stereotype.Controller;
-import org.springframework.ui.Model;
+import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
-import org.springframework.web.bind.annotation.ModelAttribute;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
+import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
-import org.springframework.web.bind.annotation.RequestParam;
+import org.springframework.web.bind.annotation.RestController;
+import ru.kata.spring.boot_security.demo.DTO.UserRequest;
 import ru.kata.spring.boot_security.demo.model.User;
 import ru.kata.spring.boot_security.demo.service.UserService;
 
-import javax.validation.Valid;
-import java.security.Principal;
 import java.util.List;
 
-@Controller
-@RequestMapping("/admin")
+@RestController
+@RequestMapping("/api")
 public class AdminController {
 
     private final UserService userService;
 
     public AdminController(UserService userService) {
-
         this.userService = userService;
     }
 
-    @GetMapping()
-    public String adminPage(Model model, Principal principal) {
-        User currentUser = userService.findByEmail(principal.getName());
-        model.addAttribute("currentUser", currentUser);
-
-        model.addAttribute("users", userService.findAll());
-
-        model.addAttribute("newUser", new User());
-
-        model.addAttribute("allRoles", userService.getAllRoles());
-
-        return "admin";
+    @GetMapping("/users")
+    public ResponseEntity<List<User>> getAllUsers() {
+        return ResponseEntity.ok(userService.findAll());
     }
 
-    @GetMapping("/addNewUser")
-    public String showAddUserForm(Model model) {
-        model.addAttribute("user", new User());
-        model.addAttribute("allRoles", userService.getAllRoles());
-        return "update-user";
-    }
-
-    @PostMapping("/addNewUser")
-    public String addUser(@ModelAttribute @Valid User user,
-                          @RequestParam(value = "roleIds", required = false) List<Long> roleIds) {
-        userService.newUser(user, roleIds);
-        return "redirect:/admin";
-    }
-
-    @GetMapping("/updateUser")
-    public String updateForm(@RequestParam("id") Long id, Model model) {
+    @GetMapping("/users/{id}")
+    public ResponseEntity<User> getUser(@PathVariable Long id) {
         User user = userService.findById(id);
-        model.addAttribute("user", user);
-        model.addAttribute("allRoles", userService.getAllRoles());
-
-        return "redirect:/admin";
+        if (user == null) {
+            return ResponseEntity.notFound().build();
+        }
+        return ResponseEntity.ok(user);
     }
 
-    @PostMapping("/updateUser")
-    public String updateUser(@ModelAttribute User user,
-                             @RequestParam(value = "roleIds", required = false) List<Long> roleIds) {
-        userService.updateUser(user, roleIds);
-        return "redirect:/admin";
+    @PostMapping("/users")
+    public ResponseEntity<User> createUser(@RequestBody UserRequest request) {
+        try {
+            User user = new User();
+            user.setFirstName(request.getFirstName());
+            user.setLastName(request.getLastName());
+            user.setEmail(request.getEmail());
+            user.setAge(request.getAge());
+            user.setPassword(request.getPassword());
+
+            userService.newUser(user, request.getRoleIds());
+
+            return ResponseEntity.status(201).body(user);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
     }
 
+    @PutMapping("/users/{id}")
+    public ResponseEntity<User> updateUser(@PathVariable Long id,
+                                           @RequestBody UserRequest request) {
+        try {
+            User user = userService.findById(id);
+            if (user == null) {
+                return ResponseEntity.notFound().build();
+            }
 
-    @PostMapping("/deleteUser")
-    public String deleteUser(@RequestParam("id") Long id) {
+            user.setFirstName(request.getFirstName());
+            user.setLastName(request.getLastName());
+            user.setEmail(request.getEmail());
+            user.setAge(request.getAge());
+
+            if (request.getPassword() != null && !request.getPassword().isEmpty()) {
+                user.setPassword(request.getPassword());
+            }
+
+            userService.updateUser(user, request.getRoleIds());
+            return ResponseEntity.ok(user);
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().build();
+        }
+    }
+
+    @DeleteMapping("/users/{id}")
+    public ResponseEntity<Void> deleteUser(@PathVariable Long id) {
         userService.delete(id);
-        return "redirect:/admin";
+        return ResponseEntity.noContent().build();
     }
+    @GetMapping("/users/me")
+    public ResponseEntity<User> getCurrentUser() {
+        // Берём email из сессии (Spring Security уже знает, кто залогинен)
+        String email = org.springframework.security.core.context
+                .SecurityContextHolder.getContext().getAuthentication().getName();
 
+        // Ищем пользователя по email
+        User user = userService.findByEmail(email);
+
+        // Возвращаем JSON
+        return user != null ? ResponseEntity.ok(user) : ResponseEntity.status(401).build();
+    }
 }

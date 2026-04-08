@@ -55,7 +55,8 @@ public class UserServiceImpl implements UserService {
         } else {
             Role defaultRole = roleRepository.findByName("ROLE_USER")
                     .orElseThrow(() -> new RuntimeException("Default role ROLE_USER not found"));
-            roles = Set.of(defaultRole);
+            roles = new HashSet<>();
+            roles.add(defaultRole);
         }
 
         user.setRoles(roles);
@@ -65,8 +66,7 @@ public class UserServiceImpl implements UserService {
     @Override
     @Transactional(readOnly = true)
     public User findById(Long id) {
-        return userRepository.findById(id)
-                .orElseThrow(() -> new RuntimeException("User not found with id: " + id));
+        return userRepository.findById(id).orElse(null);
     }
 
     @Override
@@ -106,7 +106,7 @@ public class UserServiceImpl implements UserService {
         User existingUser = userRepository.findById(user.getId())
                 .orElseThrow(() -> new RuntimeException("Пользователь не найден с id: " + user.getId()));
 
-        existingUser.setEmail(user.getUsername());
+        existingUser.setEmail(user.getEmail());
         existingUser.setAge(user.getAge());
         existingUser.setLastName(user.getLastName());
         existingUser.setFirstName(user.getFirstName());
@@ -118,7 +118,8 @@ public class UserServiceImpl implements UserService {
         } else {
             Role defaultRole = roleRepository.findByName("ROLE_USER")
                     .orElseThrow(() -> new RuntimeException("Default role ROLE_USER not found"));
-            roles = Set.of(defaultRole);
+            roles = new HashSet<>();
+            roles.add(defaultRole);
         }
         existingUser.setRoles(roles);
 

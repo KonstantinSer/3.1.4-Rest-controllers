@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>User page</title>
+    <!-- Bootstrap CSS -->
+    <link href="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/css/bootstrap.min.css" rel="stylesheet">
+    <style>
+        body { background-color: #f8f9fa; }
+        .navbar { background-color: #343a40; }
+        .sidebar { background-color: white; min-height: 100vh; padding-top: 15px; }
+        .main-content { padding: 20px 30px; }
+        /* Стили для таблицы как на скриншоте */
+        .table-container { border: 1px solid #dee2e6; border-radius: 0.25rem; background-color: white; }
+        .table-header { background-color: #f1f1f1; padding: 10px 20px; border-bottom: 1px solid #dee2e6; }
+    </style>
+</head>
+<body>
+
+<!-- ВЕРХНЯЯ ПАНЕЛЬ -->
+<nav class="navbar navbar-dark px-4 py-2">
+    <span class="navbar-text text-white">
+        <strong id="userEmail">Загрузка...</strong>
+        <span class="fw-light">with roles: </span>
+        <span class="fw-light" id="userRoles"></span>
+    </span>
+    <button onclick="logout()" class="btn btn-link text-secondary text-decoration-none p-0 text-white">Logout</button>
+</nav>
+
+<div class="container-fluid">
+    <div class="row">
+        <!-- ЛЕВЫЙ САЙДБАР -->
+        <nav class="col-md-2 d-none d-md-block sidebar px-0">
+            <div class="nav flex-column nav-pills">
+                <a class="nav-link" href="/admin.html">Admin</a>
+                <a class="nav-link active" href="#">User</a>
+            </div>
+        </nav>
+
+        <!-- ОСНОВНОЙ КОНТЕНТ -->
+        <main class="col-md-10 main-content">
+            <h1 class="mb-3">User information-page</h1>
+
+            <div class="table-container">
+                <div class="table-header">
+                    <h5 class="m-0">About user</h5>
+                </div>
+                <div class="p-4">
+                    <div id="userLoading" class="text-center py-4">
+                        <div class="spinner-border text-primary" role="status"></div>
+                        <p class="mt-2">Загрузка...</p>
+                    </div>
+                    <table class="table table-striped align-middle border-top" id="userTable" style="display: none;">
+                        <thead>
+                        <tr>
+                            <th>ID</th>
+                            <th>First Name</th>
+                            <th>Last Name</th>
+                            <th>Age</th>
+                            <th>Email</th>
+                            <th>Role</th>
+                        </tr>
+                        </thead>
+                        <tbody>
+                        <tr>
+                            <td id="userId"></td>
+                            <td id="userFirstName"></td>
+                            <td id="userLastName"></td>
+                            <td id="userAge"></td>
+                            <td id="userEmailTable"></td>
+                            <td id="userRole"></td>
+                        </tr>
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </main>
+    </div>
+</div>
+
+<!-- Bootstrap JS -->
+<script src="https://cdn.jsdelivr.net/npm/bootstrap@5.1.3/dist/js/bootstrap.bundle.min.js"></script>
+
+<!-- Наш JavaScript -->
+<script>
+    const API = '/api';
+
+    // Загрузка данных при старте
+    document.addEventListener('DOMContentLoaded', async () => {
+        await checkAuth();
+        await loadUserData();
+    });
+
+    // Проверка авторизации
+    async function checkAuth() {
+        try {
+            const res = await fetch(`${API}/users/me`, { credentials: 'include' });
+            if (!res.ok) {
+                window.location.href = '/index.html';
+                return false;
+            }
+            return true;
+        } catch (err) {
+            window.location.href = '/index.html';
+            return false;
+        }
+    }
+
+    // Загрузка данных пользователя
+    async function loadUserData() {
+        try {
+            const res = await fetch(`${API}/users/me`, { credentials: 'include' });
+            if (!res.ok) throw new Error('Failed to load user data');
+
+            const user = await res.json();
+
+            // Скрываем лоадер, показываем таблицу
+            document.getElementById('userLoading').style.display = 'none';
+            document.getElementById('userTable').style.display = 'table';
+
+            // Заполняем данные
+            document.getElementById('userId').textContent = user.id;
+            document.getElementById('userFirstName').textContent = user.firstName;
+            document.getElementById('userLastName').textContent = user.lastName;
+            document.getElementById('userAge').textContent = user.age;
+            document.getElementById('userEmailTable').textContent = user.email;
+            document.getElementById('userEmail').textContent = user.email;
+
+            // Форматируем роли
+            const rolesText = user.roles.map(r => r.name.replace('ROLE_', '')).join(' ');
+            document.getElementById('userRoles').textContent = rolesText;
+            document.getElementById('userRole').textContent = rolesText;
+
+        } catch (err) {
+            document.getElementById('userLoading').innerHTML =
+                `<div class="alert alert-danger">Ошибка: ${err.message}</div>`;
+        }
+    }
+
+    // Логаут
+    async function logout() {
+        try {
+            await fetch('/logout', {
+                method: 'POST',
+                credentials: 'include'
+            });
+            window.location.href = '/index.html?logout';
+        } catch (err) {
+            console.error('Logout error:', err);
+        }
+    }
+</script>
+
+</body>
+</html>

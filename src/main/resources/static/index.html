@@ -1,5 +1,5 @@
 <!DOCTYPE html>
-<html xmlns:th="http://www.thymeleaf.org" lang="ru">
+<html lang="ru">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
@@ -87,22 +87,8 @@
             color: #0f5132;
         }
 
-        .text-center {
-            text-align: center;
-        }
-
-        .mt-3 {
-            margin-top: 16px;
-        }
-
-        a {
-            color: #0d6efd;
-            text-decoration: none;
-            font-size: 14px;
-        }
-
-        a:hover {
-            text-decoration: underline;
+        .d-none {
+            display: none !important;
         }
     </style>
 </head>
@@ -110,36 +96,33 @@
 <div class="login-container">
     <h1>Please sign in</h1>
 
-    <!-- Сообщение об ошибке -->
-    <div th:if="${param.error}" class="alert alert-danger">
+    <!-- ✅ Сообщения (показываются через JavaScript по параметрам URL) -->
+    <div id="errorAlert" class="alert alert-danger d-none">
         Неверное имя пользователя или пароль
     </div>
 
-    <!-- Сообщение о выходе -->
-    <div th:if="${param.logout}" class="alert alert-success">
+    <div id="logoutAlert" class="alert alert-success d-none">
         Вы успешно вышли из системы
     </div>
 
-    <!-- Сообщение о регистрации -->
-    <div th:if="${param.registered}" class="alert alert-success">
+    <div id="registeredAlert" class="alert alert-success d-none">
         Регистрация успешна! Теперь вы можете войти.
     </div>
 
-    <!-- Форма логина -->
-    <form th:action="@{/login}" method="post">
+    <!-- ✅ Стандартная форма для Spring Security -->
+    <form action="/login" method="post">
         <div class="form-group">
-            <input type="text"
+            <input type="email"
                    class="form-control"
                    name="email"
-            placeholder="Email address"
-            required
-            autofocus>
+                   placeholder="Email address"
+                   required
+                   autofocus>
         </div>
 
         <div class="form-group">
             <input type="password"
                    class="form-control"
-                   id="password"
                    name="password"
                    placeholder="Password"
                    required>
@@ -147,8 +130,25 @@
 
         <button type="submit" class="btn-primary">Sign in</button>
     </form>
-
-
 </div>
+
+<!-- ✅ JavaScript для показа сообщений -->
+<script>
+    document.addEventListener('DOMContentLoaded', () => {
+        const params = new URLSearchParams(window.location.search);
+
+        // Показываем сообщения в зависимости от параметров URL
+        if (params.has('error')) {
+            document.getElementById('errorAlert').classList.remove('d-none');
+        }
+        if (params.has('logout')) {
+            document.getElementById('logoutAlert').classList.remove('d-none');
+        }
+        if (params.has('registered')) {
+            document.getElementById('registeredAlert').classList.remove('d-none');
+        }
+    });
+</script>
+
 </body>
 </html>
