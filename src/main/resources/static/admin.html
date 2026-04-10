@@ -449,15 +449,12 @@
                 });
 
                 if (res.ok) {
-                    alert('✅ Пользователь создан!');
                     form.reset();
                     switchTab('table');
                     loadUsers();
-                } else {
-                    alert('❌ Ошибка создания пользователя');
                 }
             } catch (err) {
-                alert('❌ Ошибка: ' + err.message);
+
             }
         });
     }
@@ -493,7 +490,7 @@
 
             editModal.show();
         } catch (err) {
-            alert('❌ Ошибка загрузки пользователя: ' + err.message);
+
         }
     }
 
@@ -514,6 +511,7 @@
         if (password && password.trim() !== '') {
             userData.password = password;
         }
+        console.log('Отправляем на сервер:', JSON.stringify(userData));
 
         try {
             const res = await fetch(`${API}/users/${id}`, {
@@ -524,14 +522,13 @@
             });
 
             if (res.ok) {
-                alert('✅ Пользователь обновлён!');
                 editModal.hide();
                 loadUsers();
             } else {
-                alert('❌ Ошибка обновления');
+
             }
         } catch (err) {
-            alert('❌ Ошибка: ' + err.message);
+
         }
     }
 
@@ -563,8 +560,6 @@
     async function confirmDelete() {
         const id = document.getElementById('deleteId').value;
 
-        if (!confirm('Удалить пользователя?')) return;
-
         try {
             const res = await fetch(`${API}/users/${id}`, {
                 method: 'DELETE',
@@ -572,14 +567,13 @@
             });
 
             if (res.ok) {
-                alert('✅ Пользователь удалён!');
                 deleteModal.hide();
                 loadUsers();
             } else {
-                alert('❌ Ошибка удаления');
+
             }
         } catch (err) {
-            alert('❌ Ошибка: ' + err.message);
+
         }
     }
 

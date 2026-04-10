@@ -62,22 +62,16 @@ public class AdminController {
     public ResponseEntity<User> updateUser(@PathVariable Long id,
                                            @RequestBody UserRequest request) {
         try {
-            User user = userService.findById(id);
-            if (user == null) {
-                return ResponseEntity.notFound().build();
-            }
+            User userToUpdate = new User();
+            userToUpdate.setId(id);
+            userToUpdate.setFirstName(request.getFirstName());
+            userToUpdate.setLastName(request.getLastName());
+            userToUpdate.setEmail(request.getEmail());
+            userToUpdate.setAge(request.getAge());
 
-            user.setFirstName(request.getFirstName());
-            user.setLastName(request.getLastName());
-            user.setEmail(request.getEmail());
-            user.setAge(request.getAge());
+            userService.updateUser(userToUpdate, request.getRoleIds(), request.getPassword());
 
-            if (request.getPassword() != null && !request.getPassword().isEmpty()) {
-                user.setPassword(request.getPassword());
-            }
-
-            userService.updateUser(user, request.getRoleIds());
-            return ResponseEntity.ok(user);
+            return ResponseEntity.ok().build();
         } catch (Exception e) {
             return ResponseEntity.badRequest().build();
         }
@@ -88,16 +82,15 @@ public class AdminController {
         userService.delete(id);
         return ResponseEntity.noContent().build();
     }
+
     @GetMapping("/users/me")
     public ResponseEntity<User> getCurrentUser() {
-        // Берём email из сессии (Spring Security уже знает, кто залогинен)
+
         String email = org.springframework.security.core.context
                 .SecurityContextHolder.getContext().getAuthentication().getName();
 
-        // Ищем пользователя по email
         User user = userService.findByEmail(email);
 
-        // Возвращаем JSON
         return user != null ? ResponseEntity.ok(user) : ResponseEntity.status(401).build();
     }
 }

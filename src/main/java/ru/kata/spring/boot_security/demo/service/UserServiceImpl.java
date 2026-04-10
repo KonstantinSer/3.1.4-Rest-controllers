@@ -102,7 +102,7 @@ public class UserServiceImpl implements UserService {
 
     @Override
     @Transactional
-    public void updateUser(User user, List<Long> roleIds) {
+    public void updateUser(User user, List<Long> roleIds, String rawPassword) {
         User existingUser = userRepository.findById(user.getId())
                 .orElseThrow(() -> new RuntimeException("Пользователь не найден с id: " + user.getId()));
 
@@ -112,7 +112,6 @@ public class UserServiceImpl implements UserService {
         existingUser.setFirstName(user.getFirstName());
 
         Set<Role> roles;
-
         if (roleIds != null && !roleIds.isEmpty()) {
             roles = new HashSet<>(roleRepository.findAllById(roleIds));
         } else {
@@ -123,12 +122,11 @@ public class UserServiceImpl implements UserService {
         }
         existingUser.setRoles(roles);
 
-        if (user.getPassword() != null && !user.getPassword().isEmpty()) {
-            existingUser.setPassword(bCryptPasswordEncoder.encode(user.getPassword()));
+        if (rawPassword != null && !rawPassword.trim().isEmpty()) {
+            existingUser.setPassword(bCryptPasswordEncoder.encode(rawPassword));
         }
 
         userRepository.save(existingUser);
-
     }
 
     @Override
